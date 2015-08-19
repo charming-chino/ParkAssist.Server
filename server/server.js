@@ -1,4 +1,12 @@
 require( 'dotenv' ).load();
-module.exports = app = require( './express/express.js' );
 
-var bookshelf = require( './bookshelf/config.js' );
+require( './utility' );
+
+var db = require( './bookshelf/config.js' );
+
+// Load our scraping minions!
+var cluster = require( './park_api/scrape' );
+
+if ( cluster.isMaster ) {
+  module.exports = app = require( './express/express.js' );
+}

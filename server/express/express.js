@@ -9,13 +9,6 @@ var express           = require( 'express' ),
 var app = express();
 var server = http.Server( app );
 
-process.isDev = function () { return app.get( 'env' ) === 'development'; };
-process.isProd = function () { return app.get(' env' ) === 'production'; };
-
-process.verb = function () {
-  if ( process.isDev() ) { console.log.apply( this, arguments ); }
-};
-
 // Dev logging
 if ( process.isDev() ) {
   app.use( morgan( 'dev' ) );
