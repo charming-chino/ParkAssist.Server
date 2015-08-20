@@ -2,10 +2,12 @@ var _         = require( 'lodash' ),
     rp        = require( 'request-promise' ),
     db        = require( '../bookshelf/config' ),
     bluebird  = require( 'bluebird' ),
-    Meter     = require( '../bookshelf/models/meter' ),
     api       = require( './config' );
+    proximity = require( '../geohash/geohash' );
 
-module.exports = meters = function () {
+require( '../bookshelf/models/meter' );
+
+module.exports = meters = function ( first ) {
 
   var apiMeters = api.meters();
 
@@ -22,27 +24,60 @@ module.exports = meters = function () {
 
       var results = JSON.parse( body );
 
-      _.each( results, function ( result ) {
+      var additions = [];
+      var removals = [];
 
-        var meter = db.model( 'Meter' )
+      var proms = _.map( results, function ( result ) {
+        return db.model( 'Meter' )
         .fetchOrCreateMeter( result.meter_id )
         .then( function ( meter ) {
+
           meter.set( {
             active: result.active,
             latitude: result.latitude,
             longitude: result.longitude,
           });
 
-          meter.save();
+          if ( result.active && meter.get( 'event_type' ) !== 'SS' ) {
+            if ( first ) {
+              additions.push([ result.latitude, result.longitude, meter.get( 'id' ) ]);
+            }
+          } else {
+            removals.push([ meter.get( 'id' ) ]);
+          }
+
+          return meter.save();
         });
+
       });
 
-      process.exit( 0 );
+      return bluebird.all( proms )
+      .then( function () {
+        var proms = [];
+        process.verb( 'Removals', removals.length, 'Additions', additions.length );
+        if ( removals.length > 0 ) proms.push( proximity.removeLocationsAsync( removals ) );
+        if ( additions.length > 0 ) proms.push( proximity.addLocationsAsync( additions ) );
+        if ( proms.length > 0 ) {
+          return bluebird.all( proms );
+        }
+      });
     }
   })
   .timeout( 120000 ) // 2 minute timeout
   .catch( bluebird.TimeoutError, function ( error ) {
+    process.verb( 'API Timed out:', apiMeters );
     setTimeout( meters, 30000 );
+  })
+  .catch( function ( error ) {
+    process.verb( 'API Error:', apiMeters, error );
+    setTimeout( meters, 30000 );
+  })
+  // .then( function ( meters ) {
+  //   process.verb( 'Saved all meters!' );
+  // })
+  .finally( function () {
+    process.verb( 'Completed retrieval of meters.' );
+    process.exit( 0 );
   });
 
 };

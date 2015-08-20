@@ -1,4 +1,4 @@
-var cluster = require( 'cluster' ),
+var cluster   = require( 'cluster' ),
     ordinal = '';
 
 if ( cluster.isMaster ) {
@@ -10,7 +10,7 @@ if ( cluster.isMaster ) {
 }
 
 function scrapeMetersFork( first ) {
-  var scrapeMeters = cluster.fork( { worker: './scrapeMeters', NODE_ENV: process.env.NODE_ENV } );
+  var scrapeMeters = cluster.fork( { worker: './scrapeMeters', NODE_ENV: process.env.NODE_ENV, first: first } );
 
   scrapeMeters.on( 'exit', function ( code, signal ) {
     if ( code ) { // We had an error, so let's try again in 30 seconds.

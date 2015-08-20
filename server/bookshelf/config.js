@@ -22,8 +22,8 @@ db.knex.schema.hasTable( 'meters' ).then( function ( exists ) {
     db.knex.schema.createTable( 'meters', function ( meter ) {
       meter.increments( 'id' ).primary();
       meter.string( 'meter_id' ).unique();
-      meter.decimal( 'longitude' );
-      meter.decimal( 'latitude' );
+      meter.decimal( 'longitude', 9, 6 );
+      meter.decimal( 'latitude', 9, 6 );
       meter.boolean( 'active' );
       meter.integer( 'ordinal' );
       meter.string( 'event_type' );

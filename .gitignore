@@ -3,6 +3,7 @@
 .LSOverride
 azure.err
 iisnode.yml
+dump.rdb
 
 # Environmental Variables
 .env
